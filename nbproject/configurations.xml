@@ -8,6 +8,7 @@
       <itemPath>system.h</itemPath>
       <itemPath>uart1.h</itemPath>
       <itemPath>system_types.h</itemPath>
+      <itemPath>timer_1ms.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -20,6 +21,7 @@
       <itemPath>pin_manager.c</itemPath>
       <itemPath>system.c</itemPath>
       <itemPath>uart1.c</itemPath>
+      <itemPath>timer_1ms.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
