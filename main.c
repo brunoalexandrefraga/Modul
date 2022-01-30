@@ -9,8 +9,8 @@ int main(void)
     SYSTEM_Initialize();
 
     while(1) {
-        uint8_t var = UART1_Read();
-        
-        printf("%c", var);
+//        uint8_t var = UART1_Read();
+//        
+//        printf("%c", var);
     }
 }

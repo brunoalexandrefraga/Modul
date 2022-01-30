@@ -46,6 +46,7 @@
   Section: Included Files
 */
 #include <xc.h>
+#include <stdio.h>
 #include "uart1.h"
 
 /**
@@ -90,6 +91,8 @@ void UART1_Initialize(void)
     // ABDIF disabled; WUIF disabled; ABDIE disabled; 
     U1INT = 0x00;
     
+    IEC0bits.U1RXIE = 1;
+    
     U1MODEbits.UARTEN = 1;   // enabling UART ON bit
     U1MODEbits.UTXEN = 1;
     U1MODEbits.URXEN = 1;
@@ -108,6 +111,17 @@ uint8_t UART1_Read(void)
     }
     
     return U1RXREG;
+}
+
+void __attribute__ ( ( interrupt, no_auto_psv ) ) _U1RXInterrupt( void )
+{
+    while(!(U1STAHbits.URXBE == 1))    //Check for the RX Buffer not empty
+    {
+        uint8_t reg = U1RXREG;
+        printf("Data received!");
+    }
+
+    IFS0bits.U1RXIF = false;
 }
 
 void UART1_Write(uint8_t txData)
@@ -145,10 +159,3 @@ int __attribute__((__section__(".libc.write"))) write(int handle, void *buffer, 
     }
     return(len);
 }
-
-//int __attribute__((__section__(".libc.read"))) read(int handle, void *buffer, unsigned int len) 
-//{
-//    buffer = UART1_Read();
-//    
-//    return sizeof(buffer);
-//}
