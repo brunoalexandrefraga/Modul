@@ -45,6 +45,9 @@
 #ifndef _UART1_H
 #define _UART1_H
 
+
+#define UART1_CONFIG_TX_BYTEQ_LENGTH 8
+#define UART1_CONFIG_RX_BYTEQ_LENGTH 8
 /**
   Section: Included Files
 */
@@ -108,6 +111,8 @@ void UART1_Initialize(void);
 
 uint8_t UART1_Read(void);
 
+unsigned int UART1_ReadBuffer( uint8_t *buffer, const unsigned int bufLen);
+
 /**
   @Summary
     Writes a byte of data to the UART1.
@@ -158,6 +163,10 @@ bool UART1_IsTxReady(void);
     false if there is still data pending to transfer.
 */
 bool UART1_IsTxDone(void);
+
+bool UART1_ReceiveBufferIsEmpty(void);
+
+bool UART1_TransmitBufferIsFull(void);
 
 /*******************************************************************************
 

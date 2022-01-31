@@ -11,7 +11,7 @@ int main(void)
     SYSTEM_Initialize();
 
     TIMER_SetConfiguration(TIMER_CONFIGURATION_1MS);
-    TIMER_RequestTick(&ButtonDebounce, 1000 * 10);
+    TIMER_RequestTick(&ButtonDebounce, 1000 * 2);
     
     while(1);
 }
@@ -19,5 +19,10 @@ int main(void)
 
 static void ButtonDebounce(void)
 {
-    printf("Hello dear!");
+    if(!UART1_ReceiveBufferIsEmpty()) {
+        uint8_t buffer[UART1_CONFIG_RX_BYTEQ_LENGTH];
+
+        UART1_ReadBuffer(buffer, UART1_CONFIG_RX_BYTEQ_LENGTH);
+        printf(buffer);
+    }
 }

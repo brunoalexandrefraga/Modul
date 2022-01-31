@@ -53,6 +53,47 @@
   Section: UART1 APIs
 */
 
+typedef union
+{
+    struct
+    {
+            uint8_t full:1;
+            uint8_t empty:1;
+            uint8_t reserved:6;
+    }s;
+    uint8_t status;
+} UART_BYTEQ_STATUS;
+
+typedef struct
+{
+    /* RX Byte Q */
+    uint8_t                                      *rxTail ;
+
+    uint8_t                                      *rxHead ;
+
+    /* TX Byte Q */
+    uint8_t                                      *txTail ;
+
+    uint8_t                                      *txHead ;
+
+    UART_BYTEQ_STATUS                        rxStatus ;
+
+    UART_BYTEQ_STATUS                        txStatus ;
+
+} UART_OBJECT ;
+
+static volatile UART_OBJECT uart1_obj ;
+
+/** UART Driver Queue
+
+  @Summary
+    Defines the Transmit and Receive Buffers
+
+*/
+
+static uint8_t uart1_txByteQ[UART1_CONFIG_TX_BYTEQ_LENGTH] ;
+static uint8_t uart1_rxByteQ[UART1_CONFIG_RX_BYTEQ_LENGTH] ;
+
 void UART1_Initialize(void)
 {
 /**    
@@ -96,32 +137,92 @@ void UART1_Initialize(void)
     U1MODEbits.UARTEN = 1;   // enabling UART ON bit
     U1MODEbits.UTXEN = 1;
     U1MODEbits.URXEN = 1;
+    
+    uart1_obj.txHead = uart1_txByteQ;
+    uart1_obj.txTail = uart1_txByteQ;
+    uart1_obj.rxHead = uart1_rxByteQ;
+    uart1_obj.rxTail = uart1_rxByteQ;
+    uart1_obj.rxStatus.s.empty = true;
+    uart1_obj.txStatus.s.empty = true;
+    uart1_obj.txStatus.s.full = false;
+    uart1_obj.rxStatus.s.full = false;
 }
 
 uint8_t UART1_Read(void)
 {
-    while((U1STAHbits.URXBE == 1))
+    uint8_t data = 0;
+
+    data = *uart1_obj.rxHead;
+
+    uart1_obj.rxHead++;
+
+    if (uart1_obj.rxHead == (uart1_rxByteQ + UART1_CONFIG_RX_BYTEQ_LENGTH))
     {
-        
+        uart1_obj.rxHead = uart1_rxByteQ;
     }
 
-    if ((U1STAbits.OERR == 1))
+    if (uart1_obj.rxHead == uart1_obj.rxTail)
     {
-        U1STAbits.OERR = 0;
+        uart1_obj.rxStatus.s.empty = true;
     }
-    
-    return U1RXREG;
+
+    uart1_obj.rxStatus.s.full = false;
+
+    return data;
+}
+
+unsigned int UART1_ReadBuffer(uint8_t *buffer, const unsigned int bufLen)
+{
+    unsigned int numBytesRead = 0 ;
+    while ( numBytesRead < (bufLen))
+    {
+        if( uart1_obj.rxStatus.s.empty)
+        {
+            break;
+        }
+        else
+        {
+            buffer[numBytesRead++] = UART1_Read() ;
+        }
+    }
+
+    return numBytesRead ;
 }
 
 void __attribute__ ( ( interrupt, no_auto_psv ) ) _U1RXInterrupt( void )
 {
     while(!(U1STAHbits.URXBE == 1))    //Check for the RX Buffer not empty
     {
-        uint8_t reg = U1RXREG;
-        printf("Data received!");
+        *uart1_obj.rxTail = U1RXREG;
+
+        uart1_obj.rxTail++;
+
+        if(uart1_obj.rxTail == (uart1_rxByteQ + UART1_CONFIG_RX_BYTEQ_LENGTH))
+        {
+            uart1_obj.rxTail = uart1_rxByteQ;
+        }
+
+        uart1_obj.rxStatus.s.empty = false;
+        
+        if(uart1_obj.rxTail == uart1_obj.rxHead)
+        {
+            //Sets the flag RX full
+            uart1_obj.rxStatus.s.full = true;
+            break;
+        }   
     }
 
     IFS0bits.U1RXIF = false;
+}
+
+bool UART1_ReceiveBufferIsEmpty(void)
+{
+    return((bool) uart1_obj.rxStatus.s.empty);
+}
+
+bool UART1_TransmitBufferIsFull(void)
+{
+    return((bool) uart1_obj.txStatus.s.full);
 }
 
 void UART1_Write(uint8_t txData)
